@@ -1,6 +1,8 @@
 package com.sop.chapter7.productservice.command;
 
 import com.sop.chapter7.productservice.core.event.ProductCreatedEvent;
+import com.sop.chapter9.core.command.ReserveProductCommand;
+import com.sop.chapter9.core.event.ProductReservedEvent;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
@@ -36,6 +38,22 @@ public class ProductAggregate {
         ProductCreatedEvent productCreatedEvent = new ProductCreatedEvent();
         BeanUtils.copyProperties(createProductCommand, productCreatedEvent);
         AggregateLifecycle.apply(productCreatedEvent);
+        System.out.println("created ProductAggregate");
+    }
+
+    @CommandHandler
+    public void handler(ReserveProductCommand reserveProductCommand){
+        if (quantity < reserveProductCommand.getQuantity()){
+            throw new IllegalArgumentException("Insufficient umber of items in stock");
+        }
+        ProductReservedEvent productReservedEvent = ProductReservedEvent.builder()
+                .orderId(reserveProductCommand.getOrderId())
+                .productId(reserveProductCommand.getProductId())
+                .quantity(reserveProductCommand.getQuantity())
+                .userId(reserveProductCommand.getUserId())
+                .build();
+        AggregateLifecycle.apply(productReservedEvent);
+        System.out.println("created ReserveProductCommand");
     }
 
     @EventSourcingHandler
@@ -44,5 +62,11 @@ public class ProductAggregate {
         this.title = productCreatedEvent.getTitle();
         this.price = productCreatedEvent.getPrice();
         this.quantity = productCreatedEvent.getQuantity();
+    }
+
+    @EventSourcingHandler
+    public void on(ProductReservedEvent productReservedEvent){
+        System.out.println("edit quantity productReservedEvent");
+        this.quantity -= productReservedEvent.getQuantity();
     }
 }
